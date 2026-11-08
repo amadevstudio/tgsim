@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tgsim"
+version = "0.1.0"
+description = "A Telegram for bots to talk to in tests: the Bot API in memory or over HTTP, scenarios, rendered chats and layout lint"
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "MIT"}
+dependencies = []
+
+[project.scripts]
+tgsim = "tgsim.cli:main"
+
+[tool.setuptools]
+packages = ["tgsim"]
