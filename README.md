@@ -8,7 +8,7 @@ as a page that looks like the chat, and lint flags layout mistakes Telegram lets
 No dependencies; Python 3.9+.
 
 ```sh
-pip install git+https://github.com/amadevstudio/tgsim@v0.1.1
+pip install git+https://github.com/amadevstudio/tgsim@v0.1.2
 ```
 
 ## Any bot, over HTTP

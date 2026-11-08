@@ -20,7 +20,8 @@ class TextTest(unittest.TestCase):
 
     def test_what_is_fine(self):
         for text in ('MP3, 4G, 1-й, H2O, 2026-11-08', 'https://example.com/a%20b?x=1', '/start_ref42',
-                     'Price: $5 · 250 ⭐', 'Bonjour !'):
+                     'Price: $5 · 250 ⭐', 'Bonjour !', 'Your balance is $4.50 short', 'Current balance: 0.50💲',
+                     'Go to https://example.com now', 'Write @someone today', 'See example.com today'):
             with self.subTest(text=text):
                 self.assertEqual(check_text(text, 'fr' if text.startswith('Bonjour') else 'en'), [])
 

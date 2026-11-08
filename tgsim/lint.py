@@ -28,7 +28,7 @@ _RAW_TAG = re.compile(r'</?(b|i|u|s|a|code|pre|blockquote|strong|em|tg-spoiler)\
 _DOUBLE_SPACE = re.compile(r'(?<=\S) {2,}(?=\S)')
 _GLUED = re.compile(r'(?<![\w/])[a-zа-яё]{3,}\d|\d[а-яё]{2,}')
 _SPACE_PUNCT = re.compile(r'(?<=\w) +[,.:;!?](?=\s|$)')
-_NOT_PROSE = re.compile(r'https?://\S+|tg://\S+|[@#/]\w+|\S*[_\\]\S*|\b[a-z0-9]+(\.[a-z0-9]+)+\b', re.I)
+_NOT_PROSE = re.compile(r'https?://\S+|tg://\S+|[@#/]\w+|\S*[_\\]\S*|\b[a-z0-9-]+(\.[a-z0-9-]+)*\.[a-z]{2,}\b', re.I)
 
 CYRILLIC = {'ru', 'uk', 'be', 'bg', 'kk', 'ky', 'mn', 'sr', 'tg', 'mk'}
 ARABIC = {'fa', 'ar', 'ur', 'ps'}
@@ -114,7 +114,7 @@ def _expected_script(lang: Optional[str]) -> Optional[str]:
 
 def _wrong_language(text: str, lang: Optional[str]) -> bool:
     expected = _expected_script(lang)
-    words = [word for word in re.findall(r'[^\W\d_]{3,}', _NOT_PROSE.sub(' ', text))]
+    words = [word for word in re.findall(r'[^\W\d_]{3,}', _prose(text))]
     if expected is None or not words:
         return False
     scripts = {_script(char) for char in _letters(''.join(words))}
@@ -122,7 +122,8 @@ def _wrong_language(text: str, lang: Optional[str]) -> bool:
 
 
 def _prose(text: str) -> str:
-    return _NOT_PROSE.sub(' ', text)
+    # a link or a name stands in as one mark, not a space: two spaces around it are not the text's
+    return _NOT_PROSE.sub('_', text)
 
 
 def check_text(text: str, lang: Optional[str] = None) -> List[tuple]:
