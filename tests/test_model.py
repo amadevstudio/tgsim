@@ -152,6 +152,16 @@ class SendTest(unittest.TestCase):
             self.tg.call('sendPhoto', {'chat_id': 1001})
         self.assertEqual(caught.exception.description, 'Bad Request: there is no photo in the request')
 
+    def test_a_rich_message(self):
+        rich = {'html': '<audio src="tg://audio?id=a"></audio><b>Show notes</b><br>more',
+                'media': [{'id': 'a', 'media': {'type': 'audio', 'media': 'https://x.y/e.mp3', 'title': 'E1'}}]}
+        sent = self.tg.call('sendRichMessage', {'chat_id': 1001, 'rich_message': rich})
+        self.assertTrue(sent['rich_message']['blocks'][0]['audio']['file_id'])
+        message = self.tg.history(1001)[-1]
+        self.assertEqual((message.plain, message.media['title']), ('Show notes\nmore', 'E1'))
+        with self.assertRaises(ApiError):
+            self.tg.call('sendRichMessage', {'chat_id': 1001, 'rich_message': {'html': '<b>open'}})
+
     def test_the_user_sends_a_file(self):
         got = []
         self.tg.listen(got.append)

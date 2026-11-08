@@ -128,10 +128,11 @@ class Message:
 
     @property
     def tree(self) -> html.Node:
-        if str(self.parse_mode or '').lower() == 'html':
+        mode = str(self.parse_mode or '').lower()
+        if mode in ('html', 'rich'):
             try:
-                return html.parse(self.text)
-            except html.ParseError:  # only a rich message keeps HTML Telegram would refuse elsewhere
+                return html.parse(self.text, lenient=mode == 'rich')
+            except html.ParseError:
                 return html.text_node(self.text)
         return html.text_node(self.text)
 
@@ -569,9 +570,9 @@ class Telegram:
 
     def _check_text(self, text: str, parse_mode, limit: int, what: str = 'message', empty_ok: bool = False):
         mode = str(parse_mode or '').lower()
-        if mode == 'html':
+        if mode in ('html', 'rich'):
             try:
-                root = html.parse(text)
+                root = html.parse(text, lenient=mode == 'rich')
             except html.ParseError as e:
                 raise bad_request("can't parse entities: %s" % e)
             shown = html.flatten(root)[0]
@@ -706,18 +707,20 @@ class Telegram:
         characters."""
         rich = params.get('rich_message') if isinstance(params.get('rich_message'), dict) else {}
         source = str(rich.get('html', ''))
-        try:
-            shown = html.flatten(html.parse(source))[0]
+        try:  # a rich message has tags of its own (<audio>): kept, not refused
+            shown = html.flatten(html.parse(source, lenient=True))[0]
         except html.ParseError as e:
             raise bad_request("can't parse entities: %s" % e)
         if html.utf16_len(shown) > RICH_LIMIT:
             raise bad_request('message is too long')
         media = {}
         for item in rich.get('media') or []:
-            if isinstance(item, dict) and item.get('type') == 'audio':
-                media = self._input_file(item.get('media'), files, 'audio')
-                media.update({key: item.get(key) for key in ('title', 'performer', 'duration') if item.get(key)})
-        return self._send('rich', params, source, 'HTML', media)
+            # {type, media, ...}, or {id, media: {type, media, ...}}
+            inner = item.get('media') if isinstance(item, dict) and isinstance(item.get('media'), dict) else item
+            if isinstance(inner, dict) and inner.get('type') == 'audio':
+                media = self._input_file(inner.get('media'), files, 'audio')
+                media.update({key: inner.get(key) for key in ('title', 'performer', 'duration') if inner.get(key)})
+        return self._send('rich', params, source, 'rich', media, limit=RICH_LIMIT)
 
     def _media(self, method: str, params: dict, files: dict) -> dict:
         kind = MEDIA[method]

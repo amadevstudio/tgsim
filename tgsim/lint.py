@@ -165,7 +165,7 @@ def check_message(message: Message, lang: Optional[str] = None, width: int = PHO
     if not str(message.parse_mode or '') and _RAW_TAG.search(message.text):
         add('warn', 'raw_tags', 'tags shown as text: parse_mode is not set (%r)'
             % _RAW_TAG.search(message.text).group(0))
-    if message.parse_mode and str(message.parse_mode).lower() not in ('html',):
+    if message.parse_mode and str(message.parse_mode).lower() not in ('html', 'rich'):
         add('note', 'parse_mode', 'parse_mode %s is not modeled: the text is shown as sent' % message.parse_mode)
     for level, code, text in check_text(message.plain, lang):
         add(level, code, text)

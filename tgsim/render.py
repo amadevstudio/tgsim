@@ -143,7 +143,11 @@ def _nodes(node: html.Node) -> str:
                 out.append('<blockquote>%s</blockquote>' % inner)
         elif tag in ('tg-spoiler', 'span'):
             out.append('<span class="spoiler" onclick="this.classList.add(\'shown\')">%s</span>' % inner)
-        else:  # tg-emoji: its fallback character
+        elif tag == 'br':
+            out.append('\n')
+        elif tag in ('audio', 'img', 'source', 'video'):  # a rich message's player: drawn from its media
+            pass
+        else:  # tg-emoji: its fallback character; a rich message's other tags: their text
             out.append(inner)
     return ''.join(out)
 
@@ -266,9 +270,10 @@ def bubble(message: Message, tg: Optional[Telegram] = None, lang: Optional[str] 
 
 
 def _tree(version: dict) -> html.Node:
-    if str(version.get('parse_mode') or '').lower() == 'html':
+    mode = str(version.get('parse_mode') or '').lower()
+    if mode in ('html', 'rich'):
         try:
-            return html.parse(version['text'])
+            return html.parse(version['text'], lenient=mode == 'rich')
         except html.ParseError:
             pass
     return html.text_node(version['text'])

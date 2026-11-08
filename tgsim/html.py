@@ -31,6 +31,7 @@ NAMED = {'lt': '<', 'gt': '>', 'amp': '&', 'quot': '"'}
 _ENTITY = re.compile(r'&(#[0-9]+|#[xX][0-9a-fA-F]+|[a-zA-Z][a-zA-Z0-9]*);')
 _NAME = re.compile(r'[a-zA-Z][a-zA-Z0-9-]*')
 _ATTRIBUTE = re.compile(r'[a-zA-Z_][a-zA-Z0-9_-]*')
+VOID = {'br', 'hr', 'img', 'source', 'wbr'}  # tags without an end tag (lenient mode only)
 
 
 class ParseError(ValueError):
@@ -80,8 +81,9 @@ def _offset(source: str, index: int) -> int:
     return len(source[:index].encode('utf-8'))
 
 
-def parse(source: str) -> Node:
-    """The tree of `source`, or ParseError worded as the Bot API words it."""
+def parse(source: str, lenient: bool = False) -> Node:
+    """The tree of `source`, or ParseError worded as the Bot API words it. `lenient`: tags a message does not
+    know are kept (a rich message has its own, `<audio>`), void ones need no end tag; the rest is as strict."""
     root = Node('')
     stack = [root]
     buffer: List[str] = []
@@ -127,7 +129,7 @@ def parse(source: str) -> Node:
 
         match = _NAME.match(source, i + 1)
         name = match.group(0).lower() if match else ''
-        if name not in TAGS:
+        if name not in TAGS and not (lenient and name):
             raise ParseError('Unsupported start tag "%s" at byte offset %d' % (name, offset))
         j, attrs = match.end(), {}
         while True:
@@ -136,6 +138,9 @@ def parse(source: str) -> Node:
             if j >= n:
                 raise ParseError('Unclosed start tag at byte offset %d' % offset)
             if source[j] == '>':
+                break
+            if lenient and source.startswith('/>', j):
+                j += 1
                 break
             attribute = _ATTRIBUTE.match(source, j)
             if not attribute:
@@ -164,7 +169,8 @@ def parse(source: str) -> Node:
         flush()
         node = Node(name, attrs)
         stack[-1].children.append(node)
-        stack.append(node)
+        if not (lenient and name in VOID):
+            stack.append(node)
         i = j + 1
 
     flush()
@@ -190,6 +196,9 @@ def flatten(root: Node) -> Tuple[str, list]:
             if isinstance(child, str):
                 parts.append(child)
                 position[0] += utf16_len(child)
+            elif child.tag == 'br':
+                parts.append('\n')
+                position[0] += 1
             else:
                 walk(child, depth + 1)
         kind = node.entity if node.tag else None

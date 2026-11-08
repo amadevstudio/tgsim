@@ -7,7 +7,7 @@ from .scenario import Runner, ScenarioError
 from .server import Server
 from .users import Step, User, observe
 
-__version__ = '0.1.0'
+__version__ = '0.1.1'
 __all__ = ['ApiError', 'Call', 'File', 'Issue', 'Message', 'ParseError', 'Runner', 'ScenarioError', 'Server',
            'Step', 'Telegram', 'Toast', 'User', 'bad_request', 'chat_page', 'check_message', 'check_step', 'flood',
            'member', 'observe', 'page', 'text_step']
